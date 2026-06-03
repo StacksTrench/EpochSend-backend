@@ -1,207 +1,97 @@
-# PayWhen — Intent-Based Payment Protocol on Stellar
+# EpochSend - Backend & Oracle Service
 
-<div align="center">
+![EpochSend Logo](./docs/epochsend-logo.png)
 
-![PayWhen](https://img.shields.io/badge/PayWhen-Protocol-8FA828?style=for-the-badge&logo=stellar&logoColor=white)
+> **The off-chain execution engine and Web2 Oracle for the EpochSend Protocol on Stellar.**
 
-[![Network](https://img.shields.io/badge/Stellar-Network-7d32a8?style=flat-square&logo=stellar)](https://stellar.org)
-[![Soroban](https://img.shields.io/badge/Soroban-Smart%20Contracts-FFD700?style=flat-square&logo=rust)](https://soroban.stellar.org)
-[![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs)](https://nextjs.org)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Built on Stellar](https://img.shields.io/badge/Built%20on-Stellar%20Soroban-purple)](https://soroban.stellar.org)
 
-</div>
+## 💡 Overview
 
----
+Smart contracts on the Stellar Network cannot natively pull data from the outside world or listen to standard Web2 webhooks. 
 
-> **The Problem:** Payments today are manual, trust-based, and non-conditional. Users rely on verbal agreements, manual follow-ups, and third-party intermediaries — creating friction, disputes, and inefficiency.
->
-> **The Solution:** PayWhen is an intent-based payment protocol on **Stellar** that allows users to define conditions under which funds are automatically executed on-chain. Instead of sending money immediately, users define rules — and the protocol enforces them using **Soroban smart contracts**.
-
----
-
-## 🎯 Overview
-
-PayWhen transforms **user intent** into **enforceable on-chain payment logic** on Stellar:
-
-- “Send when delivery is confirmed”
-- “Pay every Friday”
-- “Release funds after milestone completion”
-
-The system holds funds in escrow, monitors conditions, and executes automatically — no intermediaries, no manual intervention.
-
----
-
-## 🧩 Core Features
-
-### 1. Conditional Payment Contracts (Soroban)
-
-- Create payments with custom conditions
-- Funds locked securely in escrow
-- Automatic execution when conditions are met
-- Refund logic if conditions fail
-
-### 2. Supported Conditions
-
-**Time-based**
-
-- Execute at specific timestamp
-- Recurring payments (weekly/monthly)
-
-**Manual Trigger**
-
-- Recipient confirms delivery
-- Multi-party approval flows
-
-**Oracle-based** (Phase 2)
-
-- GPS/location verification
-- API-based external triggers via Soroban oracles
-
-### 3. Payment Types
-
-- One-time conditional payments
-- Recurring subscriptions
-- Group contributions (threshold unlock)
-
-### 4. Escrow System
-
-- Funds locked in Soroban smart contracts
-- Timeout-based refunds
-- Optional dispute resolution period
-- Non-custodial — users always control their keys via Stellar wallets
+The **EpochSend Backend** solves this by acting as a highly available, secure bridge between real-world events and the Soroban escrow contracts. It listens for verified external triggers (e.g., a webhook from a shipping company, a payment API, or a custom application integration), validates the payload, and signs a transaction to automatically execute the on-chain payment.
 
 ---
 
 ## 🏗️ Architecture
 
-| Layer               | Technology                    | Purpose                                         |
-| ------------------- | ----------------------------- | ----------------------------------------------- |
-| **Smart Contracts** | Soroban (Rust)                | Conditional payments, escrow, logic enforcement |
-| **Frontend**        | Next.js, TypeScript, Tailwind | Mobile-first miniapp UI                         |
-| **Network**         | Stellar (Futurenet/Testnet)   | Fast, low-cost asset transfers                  |
+```mermaid
+graph TD
+    subgraph External World (Web2)
+        API[External API / Webhook]
+        Cron[Scheduled Cron Jobs]
+    end
 
-### Smart Contracts (Soroban)
+    subgraph EpochSend Backend (Node.js)
+        Ingestion[Webhook Ingestion Route]
+        Validator[Payload Validator]
+        Wallet[Oracle Key Manager]
+        TxBuilder[Stellar Tx Builder]
+        
+        Ingestion --> Validator
+        Validator --> TxBuilder
+        Wallet --> TxBuilder
+    end
 
-#### `PaymentFactory`
+    subgraph Stellar Network (Web3)
+        Soroban[EpochSend Escrow Contract]
+    end
 
-- Creates new conditional payment contracts
-- Tracks all active payments
-- Manages payment lifecycle
-
-#### `ConditionalPayment`
-
-- Core escrow contract
-- Stores sender, recipient, amount, condition logic
-- Handles execution, refunds, and disputes
-
----
-
-## 🎨 Frontend Miniapp
-
-Lightweight, mobile-first interface:
-
-- **Create Payment**: Set amount, recipient, condition type
-- **View Status**: Active, pending, completed, refunded
-- **Trigger Execution**: Manual approval or auto-execute
-- **Real-time Updates**: Live contract state via Stellar SDK
-
----
-
-## 🔐 Security
-
-- Reentrancy protection
-- Escrow fund safety
-- Condition validation (on-chain verification)
-- Timeout fallback logic (automatic refunds)
-- Auditable on-chain execution (full transparency)
-
----
-
-## 🚀 Development
-
-### Prerequisites
-
-- Node.js 18+
-- Rust & Cargo (for Soroban)
-- Freighter Wallet
-
-### Smart Contracts
-
-```bash
-cd smartcontract
-
-# Build contracts
-cargo build --target wasm32-unknown-unknown --release
-
-# Run tests
-cargo test
+    API -->|POST /webhook| Ingestion
+    Cron -->|Trigger| Ingestion
+    TxBuilder -->|Submit Signed Tx| Soroban
 ```
 
-### Frontend
+---
+
+## 🛠 Tech Stack
+
+*   **Runtime:** Node.js
+*   **Language:** TypeScript
+*   **Framework:** Express.js (for webhook ingestion)
+*   **Blockchain Integration:** `@stellar/stellar-sdk`
+*   **Validation:** Zod (for strict payload validation)
+*   **Security:** `dotenv` for secret management, Helmet/CORS for API security.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+*   Node.js v18+
+*   npm or yarn
+*   A funded Stellar oracle account (Secret Key)
+
+### 2. Local Setup
 
 ```bash
-cd frontend
+cd backend
 
 # Install dependencies
 npm install
 
-# Run dev server
+# Setup environment variables
+cp .env.example .env
+
+# Run development server
 npm run dev
 ```
 
 ---
 
-## 📊 Success Metrics
+## 📚 Documentation & Task Tracking
 
-- Number of payments created
-- Total transaction volume (USDC/XLM)
-- Unique users
-- Execution success rate
-- Average time-to-execution
+*   🧠 **[Backend Issues & Task Breakdown](./docs/ISSUES.md)**
+*   📄 **[Product Requirements Document](./docs/PRD.md)**
 
 ---
 
-## 🗺️ Roadmap
+## 🤝 Contributing
 
-### Phase 1 (MVP)
-
-- Time-based payments
-- Manual trigger
-- Simple miniapp UI on Stellar
-- Basic escrow with refunds
-
-### Phase 2
-
-- Oracle integrations
-- Recurring payments
-- Email/SMS notifications
-- Multi-signature approvals
-
-### Phase 3
-
-- SDK for developers
-- API integrations (Zapier, IFTTT)
-- Cross-app triggers
-- Mobile app (Stellar Wallet integration)
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## 🔗 Links
-
-- [Live Miniapp](https://paywhen.vercel.app/)
-- [GitHub Repository](https://github.com/BitBand-Labs/PayWhen)
-
----
-
-### 🤝 Contributing
-
-Pull requests welcome! Please ensure:
-
-- All tests pass
-- Code follows existing style
-- New features include tests
-- Security best practices followed
-
-### 📄 License
-
-MIT © PayWhen Protocol
+*Project maintained by @babalola & contributors.*
