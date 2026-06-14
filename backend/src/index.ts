@@ -6,6 +6,21 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const REQUIRED_ENV = [
+  'STELLAR_NETWORK',
+  'SOROBAN_RPC_URL',
+  'NETWORK_PASSPHRASE',
+  'ESCROW_CONTRACT_ID',
+  'ORACLE_SECRET_KEY'
+];
+
+const missingEnv = REQUIRED_ENV.filter(key => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`❌ Missing required environment variables: ${missingEnv.join(', ')}`);
+  console.error("Please configure them in your .env file.");
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
